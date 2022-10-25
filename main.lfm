@@ -1,0 +1,33 @@
+object TinterForm: TTinterForm
+  Left = 957
+  Height = 700
+  Top = 168
+  Width = 900
+  Caption = 'Tinter'
+  ClientHeight = 700
+  ClientWidth = 900
+  Constraints.MinHeight = 600
+  Constraints.MinWidth = 800
+  OnActivate = FormActivate
+  OnCreate = FormCreate
+  LCLVersion = '2.3.0.0'
+  object ShaderCodeEditor: TATSynEdit
+    Left = 0
+    Height = 700
+    Top = 0
+    Width = 900
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Constraints.MinHeight = 600
+    Constraints.MinWidth = 800
+    DoubleBuffered = True
+    Font.Height = -12
+    Font.Name = 'Courier New'
+    ParentFont = False
+    TabOrder = 0
+    TabStop = True
+    OptUnprintedVisible = False
+    OptUnprintedSpaces = False
+    OptUnprintedEnds = False
+    OptUnprintedEof = False
+  end
+end
