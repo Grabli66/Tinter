@@ -1,20 +1,49 @@
 object TinterForm: TTinterForm
-  Left = 957
-  Height = 700
-  Top = 168
+  Left = 960
+  Height = 800
+  Top = 100
   Width = 900
   Caption = 'Tinter'
-  ClientHeight = 700
+  ClientHeight = 800
   ClientWidth = 900
   Constraints.MinHeight = 600
   Constraints.MinWidth = 800
   OnActivate = FormActivate
   OnCreate = FormCreate
   LCLVersion = '2.3.0.0'
-  object ShaderCodeEditor: TATSynEdit
+  Visible = True
+  object MainToolbar: TToolBar
     Left = 0
-    Height = 700
+    Height = 40
     Top = 0
+    Width = 900
+    ButtonHeight = 38
+    ButtonWidth = 38
+    Caption = 'MainToolbar'
+    TabOrder = 0
+    object NewShaderButton: TToolButton
+      Left = 1
+      Top = 2
+      AutoSize = True
+      Caption = 'NewShaderButton'
+    end
+    object OpenShaderButton: TToolButton
+      Left = 39
+      Top = 2
+      AutoSize = True
+      Caption = 'OpenShaderButton'
+    end
+    object UpdateShaderButton: TToolButton
+      Left = 77
+      Top = 2
+      AutoSize = True
+      Caption = 'UpdateShaderButton'
+    end
+  end
+  object ShaderCodeEditor: TATSynEdit
+    Left = 1
+    Height = 760
+    Top = 40
     Width = 900
     Anchors = [akTop, akLeft, akRight, akBottom]
     Constraints.MinHeight = 600
@@ -23,11 +52,21 @@ object TinterForm: TTinterForm
     Font.Height = -12
     Font.Name = 'Courier New'
     ParentFont = False
-    TabOrder = 0
+    TabOrder = 1
     TabStop = True
     OptUnprintedVisible = False
     OptUnprintedSpaces = False
     OptUnprintedEnds = False
     OptUnprintedEof = False
+  end
+  object UpdateSettingsTimer: TTimer
+    Interval = 500
+    OnTimer = UpdateSettingsTimerTimer
+    Left = 616
+    Top = 72
+  end
+  object ImageList1: TImageList
+    Left = 652
+    Top = 72
   end
 end
