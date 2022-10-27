@@ -21,18 +21,28 @@ type
     IsPositionChanged: boolean;
     // Признак что настройки размера были изменены
     IsSizeChanged: boolean;
+    // Признак что текст шейдера изменился
+    IsShaderChanged: boolean;
 
     // Позиция
     Top, Left: integer;
     // Размеры
     Width, Height: integer;
+    // Текст шейдера
+    ShaderText: string;
   end;
 
   { TRaylibThread }
 
   TRaylibThread = class(TThread)
   private
+    FShader: TShader;
+    FWidthLoc, FHeightLoc, FSecondsLoc: integer;
+    FScreenWidth, FScreenHeight: single;
+    FSeconds: single;
     FSettings: TRaylibThreadSettings;
+    // Применяет настройки
+    procedure UpdateSettings();
   protected
     procedure Execute; override;
   public
@@ -42,16 +52,21 @@ type
   { TTinterForm }
 
   TTinterForm = class(TForm)
-    ImageList1: TImageList;
+    ShaderCodeEditor: TATSynEdit;
+    MainImageList: TImageList;
     MainToolbar: TToolBar;
     NewShaderButton: TToolButton;
     OpenShaderButton: TToolButton;
-    ShaderCodeEditor: TATSynEdit;
     UpdateSettingsTimer: TTimer;
     UpdateShaderButton: TToolButton;
     procedure FormActivate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure NewShaderButtonClick(Sender: TObject);
+    procedure OpenShaderButtonClick(Sender: TObject);
+    // Обработка таймера обновления настроек
     procedure UpdateSettingsTimerTimer(Sender: TObject);
+    // Обрабатывает кнопку обновить шейдер
+    procedure UpdateShaderButtonClick(Sender: TObject);
   private
   public
 
@@ -72,6 +87,22 @@ begin
   gRaylibThread := TRaylibThread.Create(True);
 end;
 
+procedure TTinterForm.NewShaderButtonClick(Sender: TObject);
+begin
+
+end;
+
+procedure TTinterForm.OpenShaderButtonClick(Sender: TObject);
+begin
+
+end;
+
+procedure TTinterForm.UpdateShaderButtonClick(Sender: TObject);
+begin
+  gRaylibThread.FSettings.ShaderText := string(ShaderCodeEditor.Text);
+  gRaylibThread.FSettings.IsShaderChanged := True;
+end;
+
 procedure TTinterForm.UpdateSettingsTimerTimer(Sender: TObject);
 const
   BOTTOM_PADDING = 26;
@@ -89,7 +120,8 @@ begin
     rheight := rwidth;
   end;
 
-  if rheight > Height then begin
+  if rheight > Height then
+  begin
     rheight := Height;
   end;
 
@@ -132,56 +164,68 @@ end;
 
 { TRaylibThread }
 
-procedure TRaylibThread.Execute;
-var
-  shader: TShader;
-  widthLoc, heightLoc, secondsLoc: integer;
-  screenWidth, screenHeight, seconds: single;
+procedure TRaylibThread.UpdateSettings();
 begin
-  screenWidth := 400;
-  screenHeight := 400;
+  if FSettings.IsPositionChanged then
+  begin
+    SetWindowPosition(FSettings.Left, FSettings.Top);
+  end;
 
-  InitWindow(trunc(screenWidth), trunc(screenHeight), 'TinterRender');
+  if FSettings.IsSizeChanged then
+  begin
+    SetWindowSize(FSettings.Width, FSettings.Height);
+    FScreenWidth := FSettings.Width;
+    FScreenHeight := FSettings.Height;
+    SetShaderValue(FShader, FwidthLoc, @FScreenWidth, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(FShader, FheightLoc, @FScreenHeight, SHADER_UNIFORM_FLOAT);
+  end;
+
+  if FSettings.IsShaderChanged then
+  begin
+    FShader := LoadShaderFromMemory(nil, PChar(FSettings.ShaderText));
+    FwidthLoc := GetShaderLocation(FShader, 'screenWidth');
+    FheightLoc := GetShaderLocation(FShader, 'screenHeight');
+    FsecondsLoc := GetShaderLocation(FShader, 'seconds');
+    SetShaderValue(FShader, FwidthLoc, @FScreenWidth, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(FShader, FheightLoc, @FScreenHeight, SHADER_UNIFORM_FLOAT);
+    FSeconds := 0;
+    FSettings.IsShaderChanged := False;
+  end;
+end;
+
+procedure TRaylibThread.Execute;
+begin
+  FScreenWidth := 400;
+  FScreenHeight := 400;
+
+  InitWindow(trunc(FScreenWidth), trunc(FScreenHeight), 'TinterRender');
   SetWindowState(FLAG_VSYNC_HINT or FLAG_WINDOW_UNDECORATED or FLAG_WINDOW_TOPMOST);
 
-  shader := LoadShader(nil, './assets/screenFrag.fs');
-  widthLoc := GetShaderLocation(shader, 'screenWidth');
-  heightLoc := GetShaderLocation(shader, 'screenHeight');
-  secondsLoc := GetShaderLocation(shader, 'seconds');
+  FShader := LoadShader(nil, './assets/screenFrags.fs');
+  FwidthLoc := GetShaderLocation(FShader, 'screenWidth');
+  FheightLoc := GetShaderLocation(FShader, 'screenHeight');
+  FsecondsLoc := GetShaderLocation(FShader, 'seconds');
 
-  seconds := 0;
+  FSeconds := 0;
 
   SetTargetFPS(60);
   while (not Terminated) and (not WindowShouldClose) do
   begin
-    seconds += GetFrameTime;
+    UpdateSettings;
 
-    SetShaderValue(shader, secondsLoc, @seconds, SHADER_UNIFORM_FLOAT);
-
-    if FSettings.IsPositionChanged then
-    begin
-      SetWindowPosition(FSettings.Left, FSettings.Top);
-    end;
-
-    if FSettings.IsSizeChanged then
-    begin
-      SetWindowSize(FSettings.Width, FSettings.Height);
-      screenWidth := FSettings.Width;
-      screenHeight := FSettings.Height;
-      SetShaderValue(shader, widthLoc, @screenWidth, SHADER_UNIFORM_FLOAT);
-      SetShaderValue(shader, heightLoc, @screenHeight, SHADER_UNIFORM_FLOAT);
-    end;
+    FSeconds += GetFrameTime;
+    SetShaderValue(FShader, FsecondsLoc, @FSeconds, SHADER_UNIFORM_FLOAT);
 
     BeginDrawing();
     ClearBackground(ColorCreate(17, 22, 44, 255));
-    BeginShaderMode(shader);
+    BeginShaderMode(FShader);
     DrawRectangle(0, 0, FSettings.Width, FSettings.Height, BLUE);
     EndShaderMode;
     //DrawFPS(4, 4);
     EndDrawing();
   end;
 
-  UnloadShader(shader);
+  UnloadShader(FShader);
   CloseWindow;
 end;
 
